@@ -1,4 +1,5 @@
 #The file used to train the model
+import tensorflow as tf
 from model import Model
 from config import Config
 import os
@@ -6,7 +7,7 @@ import time
 from gym_torcs.get_buffer import GetBuffer
 
 
-debug = True
+debug = False
 
 print(80 * "=")
 print("CS 230 Miterm project report".center(80))
@@ -24,7 +25,10 @@ train_buffer = GetBuffer(replay_file_train)
 dev_buffer   = GetBuffer(replay_file_dev)
 
 
+#Result locations
+
 config = Config()
+
 
 if not os.path.exists('./data/weights/'):
     os.makedirs('./data/weights/')
@@ -33,7 +37,7 @@ with tf.Graph().as_default() as graph:
     print("Building model..."),
     start = time.time()
     model = Model(config)
-    
+    print('Model has {} parameters'.format(model.count_trainable_params()))
     #Setup variable initialization
     init_op = tf.global_variables_initializer()
     saver = None if debug else tf.train.Saver()
@@ -41,7 +45,11 @@ with tf.Graph().as_default() as graph:
 graph.finalize()
 
 with tf.Session(graph=graph) as session:
-
+    train_writer = tf.summary.FileWriter(os.path.join(config.results_dir, 'train_summaries'), session.graph)
+    eval_writer = tf.summary.FileWriter(os.path.join(config.results_dir, 'eval_summaries'), session.graph)
+    model.add_writers(train_writer, eval_writer)
+    
+    session.run(init_op)
     print(80 * "=")
     print("TRAINING")
     print(80 * "=")
@@ -52,7 +60,7 @@ with tf.Session(graph=graph) as session:
         print("TESTING".center(80))
         print(80 * "=")
         print("Restoring the best model weights found on the dev set")
-        saver.restore(session, './data/weights/parser.weights')
+        saver.restore(session, './data/weights/predictor.weights')
         print("Final evaluation on test set")
         print("Done!")
 

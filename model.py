@@ -1,10 +1,17 @@
 import tensorflow as tf
 import numpy as np
+import functools
+import os
 
 #Model skeleton taken from CS224N    
 class Model(object):
     def __init__(self,config):
         self.build(config)
+        
+    def add_writers(self, train_writer, eval_writer):
+        self.train_writer = train_writer
+        self.eval_writer = eval_writer
+        print('Summary writers add to the graph')
     
     def add_placeholders(self):
         
@@ -17,7 +24,7 @@ class Model(object):
         """Creates the feed_dict for one step of training. """
         feed_dict = {self.output_frame_placeholder: obs_batch[:,:,:,-1], #future 
                      self.input_frame_placeholder: obs_batch[:,:,:,0:-1], #past
-                     self.input_action_placeholder: actions_batch} #action set includes future action
+                     self.input_action_placeholder: np.reshape(actions_batch,[actions_batch.shape[0],1])} #action set includes future action
         
         return feed_dict
 
@@ -36,8 +43,7 @@ class Model(object):
         print('x2 shape', x2.shape)
         x3 =tf.concat([x1,x2],axis=1)
         print('x3 shape', x3.shape)
-        x4 = tf.contrib.layers.fully_connected(x3, 8000)
-        pred = tf.contrib.layers.fully_connected(x4, 4096)
+        pred = tf.contrib.layers.fully_connected(x3, 4096)
         
         
         
@@ -51,26 +57,28 @@ class Model(object):
         
 
     def add_loss_op(self, pred):
-        
         loss = tf.reduce_mean((pred-tf.contrib.layers.flatten(self.output_frame_placeholder))**2)
-        
+        tf.summary.scalar("loss", loss)
+        self.summary_op = tf.summary.merge_all()
         return loss
 
     def add_training_op(self, loss):
-  
-        return tf.train.AdamOptimizer(self.config.lr).minimize(loss)
+        self.global_step = tf.Variable(0,dtype=tf.int32,trainable=False,name='global_step')
+        return tf.train.AdamOptimizer(self.config.lr).minimize(loss,global_step=self.global_step)
         
 
     def train_on_batch(self, sess, observations_batch, actions_batch):
         """Perform one step of gradient descent on the provided batch of data. """
         feed = self.create_feed_dict(observations_batch, actions_batch=actions_batch)
-        _, loss = sess.run([self.train_op, self.loss], feed_dict=feed)
+        _, loss, summary, global_step = sess.run([self.train_op, self.loss, self.summary_op,self.global_step], feed_dict=feed)
+        self.train_writer.add_summary(summary, global_step=global_step)
         return loss
 
     def loss_on_batch(self, sess, observations_batch, actions_batch):
         """Make predictions for the provided batch of data """
-        feed = self.create_feed_dict(observations_batch, actions_batch=np.reshape(actions_batch,[actions_batch.shape[0],1]))
-        loss = sess.run([self.loss], feed_dict=feed)
+        feed = self.create_feed_dict(observations_batch, actions_batch=actions_batch)
+        loss, summary, global_step = sess.run([self.loss,self.summary_op,self.global_step], feed_dict=feed)
+        self.eval_writer.add_summary(summary, global_step=global_step)
         return loss
 
     def build(self, config):
@@ -89,20 +97,25 @@ class Model(object):
             loss = self.train_on_batch(sess, obs_batch, act_batch)
             prog.update(i + 1, [("train loss", loss)], force=i + 1 == n_minibatches)
 
-        print("Evaluating on dev set",)
-        obs_batch, act_batch, rew_batch, next_obs_batch, done_mask = dev_buffer.sample(dev_buffer.num_in_buffer-1)
-        dev_loss, _ = self.loss_on_batch(sess, obs_batch,act_batch)
-        print("Dev score: {:.2f}".format(dev_loss))
+            if i== n_minibatches -1: print("Evaluating on dev set",) 
+            obs_batch, act_batch, rew_batch, next_obs_batch, done_mask = dev_buffer.sample(dev_buffer.num_in_buffer-1)
+            dev_loss = self.loss_on_batch(sess, obs_batch,act_batch)[0]
+            if i==n_minibatches -1: print("Dev loss: {:.7f}".format(dev_loss))
         return dev_loss
 
-    def fit(self, sess, saver, train_buffer, dev_buffer):
-        best_dev_loss = 0
+    def fit(self, sess, saver,train_buffer, dev_buffer):
+        best_dev_loss = 100
         for epoch in range(self.config.n_epochs):
             print("Epoch {:} out of {:}".format(epoch + 1, self.config.n_epochs))
             dev_loss = self.run_epoch(sess, train_buffer, dev_buffer)
             if dev_loss < best_dev_loss:
                 best_dev_loss = dev_loss
                 if saver:
-                    print("New best dev loss! Saving model in ./data/weights/parser.weights")
-                    saver.save(sess, './data/weights/parser.weights')
+                    print("New best dev loss! Saving model in ./data/weights/predictor.weights")
+                    saver.save(sess, './data/weights/predictor.weights', global_step=self.global_step)
             print()
+            
+            
+    def count_trainable_params(self):
+        shapes = [functools.reduce(lambda x,y: x*y,variable.get_shape()) for variable in tf.trainable_variables()]
+        return functools.reduce(lambda x,y: x+y, shapes)
