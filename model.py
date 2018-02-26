@@ -96,11 +96,11 @@ class Model(object):
             obs_batch, act_batch, rew_batch, next_obs_batch, done_mask = train_buffer.sample(self.config.batch_size)
             loss = self.train_on_batch(sess, obs_batch, act_batch)
             prog.update(i + 1, [("train loss", loss)], force=i + 1 == n_minibatches)
-
-            if i== n_minibatches -1: print("Evaluating on dev set",) 
-            obs_batch, act_batch, rew_batch, next_obs_batch, done_mask = dev_buffer.sample(dev_buffer.num_in_buffer-1)
-            dev_loss = self.loss_on_batch(sess, obs_batch,act_batch)[0]
-            if i==n_minibatches -1: print("Dev loss: {:.7f}".format(dev_loss))
+            if i%100 == 0 or i== n_minibatches -1:
+                if i== n_minibatches -1: print("Evaluating on dev set",) 
+                obs_batch, act_batch, rew_batch, next_obs_batch, done_mask = dev_buffer.sample(dev_buffer.num_in_buffer-1)
+                dev_loss = self.loss_on_batch(sess, obs_batch,act_batch)
+                if i==n_minibatches -1: print("Dev loss: {:.7f}".format(dev_loss))
         return dev_loss
 
     def fit(self, sess, saver,train_buffer, dev_buffer):

@@ -51,8 +51,8 @@ with tf.Session(graph=graph) as session:
     
     session.run(init_op)
     print(80 * "=")
-    print("TRAINING")
     print(80 * "=")
+    print("TRAINING".center(80))
     model.fit(session, saver, train_buffer, dev_buffer)
 
     if not debug:
