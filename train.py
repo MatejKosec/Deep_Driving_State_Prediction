@@ -51,8 +51,8 @@ with tf.Session(graph=graph) as session:
     
     session.run(init_op)
     print(80 * "=")
-    print(80 * "=")
     print("TRAINING".center(80))
+    print(80 * "=")
     model.fit(session, saver, train_buffer, dev_buffer)
 
     if not debug:
@@ -61,7 +61,7 @@ with tf.Session(graph=graph) as session:
         print(80 * "=")
         print("Restoring the best model weights found on the dev set")
         saver.restore(session, './data/weights/predictor.weights')
-        print("Final evaluation on test set")
+        #print("Final evaluation on test set")
         print("Done!")
 
 

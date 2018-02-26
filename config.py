@@ -3,6 +3,6 @@ class Config(object):
     
     batch_size = 64
     n_epochs = 2
-    lr = 0.5
+    lr = 0.1
     results_dir='./experiments/base_model/'
     
