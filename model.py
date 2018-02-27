@@ -110,7 +110,7 @@ class Model(object):
             plt.figure(1,figsize=(20,10))
             plt.subplot(121)
             plt.imshow(prediction.reshape((64,64)),cmap="Greys")
-            plt.xlabel('Prediction')
+            plt.xlabel('Prediction') #1
             plt.subplot(122)
             plt.imshow(truth.reshape((64,64)),cmap="Greys")
             plt.xlabel('Truth')
