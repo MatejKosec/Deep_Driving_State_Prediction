@@ -30,31 +30,34 @@ class Model(object):
 
     def add_prediction_op(self):
         """Implements the core of the model that transforms a batch of input data into predictions. """
+        #BASED ON THE SEGNET ARCHITECTURE http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=7803544
         
-        #Use convolution to encode the imput image
-        x1 = tf.contrib.layers.conv2d(self.input_frame_placeholder, 8, \
-                                          kernel_size=[8,8], stride=(1,1), padding='SAME', normalizer_fn=tf.contrib.layers.batch_norm)
-        print('x1 shape', x1.shape)
-        x2 = tf.contrib.layers.conv2d(x1, 8, \
+        #Convolution, convolution, pool
+        x1 = tf.contrib.layers.conv2d(self.input_frame_placeholder, 32, \
                                           kernel_size=[4,4], stride=(1,1), padding='SAME', normalizer_fn=tf.contrib.layers.batch_norm)
-        print('x2 shape', x2.shape)
-        #x2 = tf.contrib.layers.max_pool2d(x1, \
-        #                                  kernel_size=[2,2], stride=(2,2), padding='SAME')
-        #print('x2 shape', x2.shape)
-        x5 = x2
+        print('x1 shape', x1.shape)
+        x1 = tf.contrib.layers.conv2d(x1, 8, \
+                                          kernel_size=[4,4], stride=(1,1), padding='SAME', normalizer_fn=tf.contrib.layers.batch_norm)
+        print('x1 shape', x1.shape)
+        x2 = tf.contrib.layers.max_pool2d(x1, \
+                                          kernel_size=[2,2], stride=(2,2), padding='SAME')
+        print('x2  shape', x2.shape)
+        x4=x2
         
-        
-        #x5 = tf.image.resize_bicubic(x4, [48,48])
+        #Upscale, deconvolve, deconvolve
+        x5 = tf.image.resize_bicubic(x4, [48,48]) #upscale
         print('x5 shape', x5.shape)
-        x6= tf.contrib.layers.conv2d_transpose(x5, 6 , [6,6], stride=1, padding='SAME')
+        x6= tf.contrib.layers.conv2d_transpose(x5, 12 , [4,4], stride=1, padding='SAME') #deconvolve
         print('x6 shape', x6.shape)
-        x6= tf.contrib.layers.conv2d_transpose(x6, 6 , [4,4], stride=1, padding='SAME')
+        x6= tf.contrib.layers.conv2d_transpose(x6, 8 , [4,4], stride=1, padding='SAME') #deconvolve
         print('x6 shape', x6.shape)
+        
+        #Upscale, deconvolve, deconvolve
         x7 = tf.image.resize_bilinear(x6, [64,64])
         print('x7 shape', x7.shape)
         x8= tf.contrib.layers.conv2d_transpose(x7, 4 ,  [4,4], stride=1, padding='SAME',activation_fn=tf.nn.relu)
         print('x8 shape', x8.shape)
-        x8= tf.contrib.layers.conv2d_transpose(x8, 1 ,  [2,2], stride=1, padding='SAME',activation_fn=tf.nn.sigmoid)
+        x8= tf.contrib.layers.conv2d_transpose(x8, 1 ,  [4,4], stride=1, padding='SAME',activation_fn=tf.nn.sigmoid)
         print('x8 shape', x8.shape)
         pred=tf.contrib.layers.flatten(x8)
         print('pred shape', pred.shape)
@@ -110,7 +113,7 @@ class Model(object):
             print('Prediction shape:', prediction.shape)
             
             plt.figure(1,figsize=(10,5))
-            plt.title('Comparison between prediction and truth (test set)')
+            #plt.title('Comparison between prediction and truth (test set)')
             plt.subplot(121)
             plt.imshow(prediction.reshape((64,64)),cmap="Greys")
             plt.xlabel('Prediction') #1

@@ -65,6 +65,6 @@ with tf.Session(graph=graph) as session:
         print("Final evaluation on test set")
         test_buffer   = GetBuffer(replay_file_test)
         model.compare_outputs(test_buffer, session)
-        print("Done!")
+        print("Done! Took {:.2f} seconds for everything \n".format(time.time() - start))
 
 
