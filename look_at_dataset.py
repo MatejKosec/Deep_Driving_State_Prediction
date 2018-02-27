@@ -12,11 +12,16 @@ train_buffer = GetBuffer(replay_file_train)
 dev_buffer   = GetBuffer(replay_file_dev)
 
 
-truth = train_buffer.sample(1)[0]
-truth = truth[0,:,:,-1]
-print('Truth shape:', truth.shape)
+truth_buffer = train_buffer.sample(6)[0]
 
-
-plt.figure(1,figsize=(4,4))
-plt.imshow(truth.reshape((64,64)),cmap="Greys")
-plt.xlabel('Truth')
+plt.figure(1,figsize=(12,8))
+subfig = 231
+for t in range(6):
+    truth = truth_buffer[t,:,:,2]
+    print('Truth shape:', truth.shape)
+    plt.subplot(231+t)
+    plt.imshow(truth.reshape((64,64)),cmap="Greys")
+    plt.xlabel('Example: %i'%t)
+plt.savefig('./data/sample_inputs4.png',dpi=300, bbox_inches='tight')
+    
+    

@@ -8,6 +8,7 @@ from gym_torcs.get_buffer import GetBuffer
 
 
 debug = False
+train = False
 
 print(80 * "=")
 print("CS 230 Miterm project report".center(80))
@@ -45,15 +46,16 @@ with tf.Graph().as_default() as graph:
 graph.finalize()
 
 with tf.Session(graph=graph) as session:
-    train_writer = tf.summary.FileWriter(os.path.join(config.results_dir, 'train_summaries'), session.graph)
-    eval_writer = tf.summary.FileWriter(os.path.join(config.results_dir, 'eval_summaries'), session.graph)
-    model.add_writers(train_writer, eval_writer)
-    
-    session.run(init_op)
-    print(80 * "=")
-    print("TRAINING".center(80))
-    print(80 * "=")
-    model.fit(session, saver, train_buffer, dev_buffer)
+    if train:
+        train_writer = tf.summary.FileWriter(os.path.join(config.results_dir, 'train_summaries'), session.graph)
+        eval_writer = tf.summary.FileWriter(os.path.join(config.results_dir, 'eval_summaries'), session.graph)
+        model.add_writers(train_writer, eval_writer)
+        
+        session.run(init_op)
+        print(80 * "=")
+        print("TRAINING".center(80))
+        print(80 * "=")
+        model.fit(session, saver, train_buffer, dev_buffer)
 
     if not debug:
         print(80 * "=")

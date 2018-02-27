@@ -4,6 +4,6 @@ class Config(object):
     batch_size = 32
     n_epochs = 5
     lr = 0.01
-    n_test_samples = 3
+    n_test_samples = 10
     results_dir='./experiments/deconvolution_model/'
     
