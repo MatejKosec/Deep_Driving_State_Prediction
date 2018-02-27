@@ -59,9 +59,12 @@ with tf.Session(graph=graph) as session:
         print(80 * "=")
         print("TESTING".center(80))
         print(80 * "=")
+        
         print("Restoring the best model weights found on the dev set")
         saver.restore(session, './data/weights/predictor.weights')
-        #print("Final evaluation on test set")
+        print("Final evaluation on test set")
+        test_buffer   = GetBuffer(replay_file_test)
+        model.compare_outputs(test_buffer, session)
         print("Done!")
 
 

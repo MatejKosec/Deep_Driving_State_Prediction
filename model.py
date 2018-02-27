@@ -41,10 +41,10 @@ class Model(object):
         x3 = tf.contrib.layers.conv2d(x2, 1, \
                                       kernel_size=[4,4], stride=(1,1), padding='SAME')
         print('x3 shape', x3.shape)
-        x4 = tf.contrib.layers.max_pool2d(x3, \
-                                          kernel_size=[2,2], stride=(2,2), padding='SAME')
-        print('x4 shape', x4.shape)
-        
+        #x4 = tf.contrib.layers.max_pool2d(x3, \
+        #                                  kernel_size=[2,2], stride=(2,2), padding='SAME')
+        #print('x4 shape', x4.shape)
+        x4=x3
         #Now combine the encoding the the actoin vector
         x5 =tf.contrib.layers.flatten(x4)
         print('x5 shape', x5.shape)
@@ -54,15 +54,10 @@ class Model(object):
         print('x7 shape', x7.shape)
         
         #Predict the future based on image encoding and action taken
-        pred = tf.contrib.layers.fully_connected(x7, 4096)
+        pred = tf.contrib.layers.fully_connected(x7, 4096, activation_fn=tf.nn.sigmoid)
         print('pred shape', pred.shape)
             
-        
-        
-        
-        #Merge the two streams
-        
-        #Unconvolution net
+
         
         return pred
         
@@ -99,6 +94,27 @@ class Model(object):
         self.loss = self.add_loss_op(self.pred)
         self.train_op = self.add_training_op(self.loss)
         
+    def compare_outputs(self, test_buffer, sess):
+        samples = test_buffer.sample(self.config.n_test_samples)
+        obs_batch, act_batch, rew_batch, next_obs_batch, done_mask = samples
+        feed = self.create_feed_dict(obs_batch, actions_batch=act_batch)
+        predictions = sess.run([self.pred], feed_dict=feed)[0]
+        from matplotlib import pyplot as plt
+        for i in range(self.config.n_test_samples):
+            truth = obs_batch[i,:,:,-1]
+            print('Truth shape:', truth.shape)
+            prediction = predictions[i]
+            print('Predictions shape:', predictions.shape)
+            print('Prediction shape:', prediction.shape)
+            
+            plt.figure(1,figsize=(20,10))
+            plt.subplot(121)
+            plt.imshow(prediction.reshape((64,64)),cmap="Greys")
+            plt.xlabel('Prediction')
+            plt.subplot(122)
+            plt.imshow(truth.reshape((64,64)),cmap="Greys")
+            plt.xlabel('Truth')
+            plt.savefig('./data/example_figure%i.png'%i,dpi=300)
         
     def run_epoch(self, sess, train_buffer, dev_buffer):
         n_minibatches = train_buffer.num_in_buffer // self.config.batch_size
@@ -123,7 +139,7 @@ class Model(object):
                 best_dev_loss = dev_loss
                 if saver:
                     print("New best dev loss! Saving model in ./data/weights/predictor.weights")
-                    saver.save(sess, './data/weights/predictor.weights', global_step=self.global_step)
+                    saver.save(sess, './data/weights/predictor.weights')
             print()
             
             
