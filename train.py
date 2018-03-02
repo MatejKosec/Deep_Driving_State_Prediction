@@ -8,7 +8,7 @@ from gym_torcs.get_buffer import GetBuffer
 
 
 debug = False
-train = True
+train = 
 
 print(80 * "=")
 print("CS 230 Miterm project report".center(80))
